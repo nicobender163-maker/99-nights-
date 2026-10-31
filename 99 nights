@@ -1,0 +1,1882 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
+
+local window = Rayfield:CreateWindow({
+    name = "🔦99 nights | Coustum [Premium]🔦",
+    subtitle = "🔦99 nights | Coustum [Premium]🔦",
+    sidebarLayout = true
+})
+
+local mainTab = window:CreateTab({ 
+    name = "🏠home", 
+    icon = "🏠home" 
+})
+
+mainTab:CreateButton({
+    name = "sky base",
+    callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/5PqzEXBQ"))()
+    end,
+})
+
+mainTab:CreateButton({
+    name = "teleport",
+    callback = function()
+        --[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+--// ============== SETTINGS ============== \\--
+
+-- Target items with desired quantities and CATEGORY
+local targetItems = {
+    ["Log"] = {quantity = 10, category = "Material"},
+    ["Coal"] = {quantity = 15, category = "Material"},
+    ["Fuel"] = {quantity = 5, category = "Consumable"},
+    ["Berry"] = {quantity = 15, category = "Food"},
+    ["Alien Chest"] = {quantity = 2, category = "Container"},
+    ["Bolt"] = {quantity = 20, category = "Material"},
+    ["Coin Stack"] = {quantity = -1, category = "Currency"},
+    ["Fuel Canister"] = {quantity = 8, category = "Consumable"},
+    ["Item Chest"] = {quantity = 3, category = "Container"},
+    ["Laser Fence Blueprint"] = {quantity = 1, category = "Blueprint"},
+    ["Old Flashlight"] = {quantity = 2, category = "Tool"},
+    ["Old Radio"] = {quantity = 1, category = "Tool"},
+    ["Revolver Ammo"] = {quantity = 50, category = "Ammo"},
+    ["Rifle Ammo"] = {quantity = 100, category = "Ammo"},
+    ["Sheet Metal"] = {quantity = 25, category = "Material"},
+    ["UFO Component"] = {quantity = 5, category = "Component"},
+    ["UFO Scrap"] = {quantity = 15, category = "Component"},
+    ["Old Car Engine"] = {quantity = 1, category = "Vehicle Part"},
+    ["Rifle"] = {quantity = 1, category = "Weapon"},
+    ["Seed Box"] = {quantity = 5, category = "Farming"},
+    ["Steak"] = {quantity = 10, category = "Food"},
+    ["Strong Flashlight"] = {quantity = 1, category = "Tool"},
+    ["Stronghold Diamond Chest"] = {quantity = 1, category = "Container"},
+    ["Tyre"] = {quantity = 4, category = "Vehicle Part"},
+    ["Washing Machine"] = {quantity = 1, category = "Furniture"},
+    ["Wolf Corpse"] = {quantity = 3, category = "Resource"},
+    ["Wolf Pelt"] = {quantity = 5, category = "Resource"},
+    ["Alpha Wolf Corpse"] = {quantity = 1, category = "Resource"},
+    ["Anvil Back"] = {quantity = 1, category = "Crafting"},
+    ["Anvil Base"] = {quantity = 1, category = "Crafting"},
+    ["Anvil Front"] = {quantity = 1, category = "Crafting"},
+    ["Apple"] = {quantity = 10, category = "Food"},
+    ["Bandage"] = {quantity = 5, category = "Medical"},
+    ["Broken Microwave"] = {quantity = 1, category = "Furniture"},
+    ["Cake"] = {quantity = 1, category = "Food"},
+    ["Chair"] = {quantity = 2, category = "Furniture"},
+    ["Leather Body"] = {quantity = 1, category = "Armor"},
+    ["Medkit"] = {quantity = 3, category = "Medical"},
+    ["Morsel"] = {quantity = 10, category = "Food"},
+    ["Notice"] = {quantity = 1, category = "Miscellaneous"},
+    ["Oil Barrel"] = {quantity = 2, category = "Container"},
+}
+
+-- Add Item Chest1 to Item Chest20 with a "Container" category
+for i = 1, 20 do
+    targetItems["Item Chest" .. i] = {quantity = 1, category = "Container"}
+end
+
+-- Define categories for easy iteration and UI creation
+local categories = {"All", "Food", "Material", "Container", "Tool", "Weapon"}
+
+-- How often the teleport can be used (in seconds)
+local COOLDOWN = 1
+
+-- Teleport settings
+local TELEPORT_OFFSET = 5 -- Distance to teleport from the item
+local AUTO_COLLECT_MODE = false -- Whether to automatically collect multiple items
+
+--// ====================================== \\--
+
+-- Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Player = Players.LocalPlayer
+
+-- Variables
+local canTeleport = true
+local canScan = true
+local canDiscover = true
+local collectedItems = {}
+local availableItems = {}
+local discoveredItems = {}
+local currentCategory = "All"
+local itemPositions = {} -- Store item positions for teleportation
+
+-- Wait for PlayerGui to be available
+local playerGui = Player:WaitForChild("PlayerGui")
+
+-- ============== MODERN iOS THEME GUI ============== 
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "iOSItemTeleporter"
+screenGui.Parent = playerGui
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Main Container (iOS-style card)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 380)
+mainFrame.Position = UDim2.new(0.5, -110, 0.5, -190)
+mainFrame.BackgroundColor3 = Color3.fromRGB(242, 242, 247) -- iOS light gray
+mainFrame.BorderSizePixel = 0
+mainFrame.Draggable = true
+mainFrame.Active = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 14) -- iOS rounded corners
+corner.Parent = mainFrame
+
+-- Shadow effect
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.88
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.Size = UDim2.new(1, 20, 1, 20)
+shadow.Position = UDim2.new(0, -10, 0, -10)
+shadow.BackgroundTransparency = 1
+shadow.Parent = mainFrame
+shadow.ZIndex = -1
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 44)
+header.BackgroundColor3 = Color3.fromRGB(242, 242, 247)
+header.BorderSizePixel = 0
+header.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 14)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Parent = header
+title.Size = UDim2.new(1, 0, 0.6, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(0, 0, 0)
+title.Font = Enum.Font.SourceSansSemibold
+title.Text = "99 Nights - TELEPORTER"
+title.TextSize = 16
+title.TextYAlignment = Enum.TextYAlignment.Bottom
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Parent = header
+subtitle.Size = UDim2.new(1, 0, 0.4, 0)
+subtitle.Position = UDim2.new(0, 0, 0.6, 0)
+subtitle.BackgroundTransparency = 1
+subtitle.TextColor3 = Color3.fromRGB(120, 120, 128)
+subtitle.Font = Enum.Font.SourceSans
+subtitle.Text = "Teleport to nearby items"
+subtitle.TextSize = 12
+subtitle.TextYAlignment = Enum.TextYAlignment.Top
+
+-- Tab Bar (iOS-style segmented control)
+local tabContainer = Instance.new("Frame")
+tabContainer.Parent = mainFrame
+tabContainer.Size = UDim2.new(1, -20, 0, 28)
+tabContainer.Position = UDim2.new(0, 10, 0, 50)
+tabContainer.BackgroundColor3 = Color3.fromRGB(229, 229, 234)
+tabContainer.BorderSizePixel = 0
+
+local tabCorner = Instance.new("UICorner")
+tabCorner.CornerRadius = UDim.new(1, 0)
+tabCorner.Parent = tabContainer
+
+local tabListLayout = Instance.new("UIListLayout")
+tabListLayout.Parent = tabContainer
+tabListLayout.FillDirection = Enum.FillDirection.Horizontal
+tabListLayout.Padding = UDim.new(0, 1)
+
+-- Mode Toggle
+local modeToggle = Instance.new("Frame")
+modeToggle.Parent = mainFrame
+modeToggle.Size = UDim2.new(1, -20, 0, 30)
+modeToggle.Position = UDim2.new(0, 10, 0, 85)
+modeToggle.BackgroundTransparency = 1
+
+local modeLabel = Instance.new("TextLabel")
+modeLabel.Parent = modeToggle
+modeLabel.Size = UDim2.new(0.6, 0, 1, 0)
+modeLabel.BackgroundTransparency = 1
+modeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+modeLabel.Font = Enum.Font.SourceSans
+modeLabel.Text = "Auto-collect mode:"
+modeLabel.TextSize = 14
+modeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local modeSwitch = Instance.new("TextButton")
+modeSwitch.Parent = modeToggle
+modeSwitch.Size = UDim2.new(0, 50, 0, 25)
+modeSwitch.Position = UDim2.new(0.6, 0, 0, 2.5)
+modeSwitch.BackgroundColor3 = Color3.fromRGB(200, 200, 205)
+modeSwitch.Text = ""
+modeSwitch.BorderSizePixel = 0
+
+local switchCorner = Instance.new("UICorner")
+switchCorner.CornerRadius = UDim.new(1, 0)
+switchCorner.Parent = modeSwitch
+
+local switchIndicator = Instance.new("Frame")
+switchIndicator.Parent = modeSwitch
+switchIndicator.Size = UDim2.new(0, 21, 0, 21)
+switchIndicator.Position = UDim2.new(0, 2, 0, 2)
+switchIndicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+switchIndicator.BorderSizePixel = 0
+
+local indicatorCorner = Instance.new("UICorner")
+indicatorCorner.CornerRadius = UDim.new(1, 0)
+indicatorCorner.Parent = switchIndicator
+
+-- Status Bar
+local statusBar = Instance.new("Frame")
+statusBar.Parent = mainFrame
+statusBar.Size = UDim2.new(1, -20, 0, 20)
+statusBar.Position = UDim2.new(0, 10, 0, 160)
+statusBar.BackgroundTransparency = 1
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = statusBar
+statusLabel.Size = UDim2.new(1, 0, 1, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = Color3.fromRGB(120, 120, 128)
+statusLabel.Font = Enum.Font.SourceSans
+statusLabel.Text = "Ready to scan"
+statusLabel.TextSize = 12
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Item List (iOS-style table view)
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Parent = mainFrame
+scrollFrame.Size = UDim2.new(1, -10, 1, -180)
+scrollFrame.Position = UDim2.new(0, 5, 0, 180)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 4
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 205)
+scrollFrame.BorderSizePixel = 0
+scrollFrame.BottomImage = ""
+scrollFrame.MidImage = ""
+scrollFrame.TopImage = ""
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = scrollFrame
+listLayout.Padding = UDim.new(0, 2)
+
+-- ============== TELEPORTATION FUNCTIONS ==============
+
+-- Function to safely teleport player
+local function teleportToPosition(position, itemName)
+    local character = Player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "❌ Character not found!"
+        return false
+    end
+
+    local humanoidRootPart = character.HumanoidRootPart
+    
+    -- Calculate safe teleport position (slightly offset from item)
+    local offsetPosition = position + Vector3.new(
+        math.random(-TELEPORT_OFFSET, TELEPORT_OFFSET),
+        2, -- Slightly above ground
+        math.random(-TELEPORT_OFFSET, TELEPORT_OFFSET)
+    )
+    
+    -- Create smooth teleport effect
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, {
+        CFrame = CFrame.new(offsetPosition)
+    })
+    
+    statusLabel.Text = "🚀 Teleporting to " .. itemName .. "..."
+    tween:Play()
+    
+    tween.Completed:Connect(function()
+        statusLabel.Text = "✅ Teleported to " .. itemName .. "!"
+        task.wait(1)
+        if statusLabel and statusLabel.Parent then
+            statusLabel.Text = "Ready to teleport"
+        end
+    end)
+    
+    return true
+end
+
+-- Function to teleport to specific item
+local function teleportToSpecificItem(itemName)
+    if not canTeleport then 
+        statusLabel.Text = "⏳ Teleport on cooldown..."
+        return 
+    end
+    
+    canTeleport = false
+    
+    local character = Player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "❌ Character not found!"
+        canTeleport = true
+        return
+    end
+
+    local itemsFound = {}
+    local itemData = targetItems[itemName] or {quantity = 1}
+    
+    statusLabel.Text = "🔍 Finding " .. itemName .. "..."
+    
+    -- Search through workspace for specific item
+    for _, item in pairs(workspace:GetDescendants()) do
+        if item.Name == itemName then
+            local position = nil
+            
+            -- Get item position based on type
+            if item:IsA("BasePart") then
+                position = item.Position
+            elseif item:IsA("Model") then
+                local primaryPart = item.PrimaryPart or item:FindFirstChildOfClass("BasePart")
+                if primaryPart then
+                    position = primaryPart.Position
+                end
+            end
+            
+            if position then
+                table.insert(itemsFound, {item = item, position = position})
+            end
+        end
+    end
+    
+    if #itemsFound == 0 then
+        statusLabel.Text = "❌ No " .. itemName .. " found!"
+        canTeleport = true
+        return
+    end
+    
+    -- Find closest item
+    local playerPosition = character.HumanoidRootPart.Position
+    local closestItem = nil
+    local closestDistance = math.huge
+    
+    for _, itemInfo in pairs(itemsFound) do
+        local distance = (playerPosition - itemInfo.position).Magnitude
+        if distance < closestDistance then
+            closestDistance = distance
+            closestItem = itemInfo
+        end
+    end
+    
+    if closestItem then
+        teleportToPosition(closestItem.position, itemName)
+    else
+        statusLabel.Text = "❌ Could not find accessible " .. itemName
+    end
+    
+    -- Reset cooldown
+    task.spawn(function()
+        task.wait(COOLDOWN)
+        canTeleport = true
+    end)
+end
+
+-- Function to auto-collect mode (teleport to multiple items)
+local function autoCollectItems()
+    if not canTeleport then 
+        statusLabel.Text = "⏳ Auto-collect on cooldown..."
+        return 
+    end
+    
+    if not AUTO_COLLECT_MODE then
+        statusLabel.Text = "❌ Auto-collect mode disabled"
+        return
+    end
+    
+    canTeleport = false
+    
+    local character = Player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "❌ Character not found!"
+        canTeleport = true
+        return
+    end
+
+    local itemQueue = {}
+    local itemsCounted = {}
+    
+    statusLabel.Text = "🎯 Building teleport queue..."
+    
+    -- Initialize counters
+    for itemName, _ in pairs(targetItems) do
+        itemsCounted[itemName] = 0
+    end
+    
+    -- Build queue of items to collect
+    for _, item in pairs(workspace:GetDescendants()) do
+        if targetItems[item.Name] then
+            local itemName = item.Name
+            local targetCount = targetItems[itemName].quantity
+            
+            -- Check if we need more of this item
+            if targetCount == -1 or itemsCounted[itemName] < targetCount then
+                local position = nil
+                
+                if item:IsA("BasePart") then
+                    position = item.Position
+                elseif item:IsA("Model") then
+                    local primaryPart = item.PrimaryPart or item:FindFirstChildOfClass("BasePart")
+                    if primaryPart then
+                        position = primaryPart.Position
+                    end
+                end
+                
+                if position then
+                    table.insert(itemQueue, {
+                        name = itemName,
+                        position = position,
+                        item = item
+                    })
+                    itemsCounted[itemName] = itemsCounted[itemName] + 1
+                end
+            end
+        end
+    end
+    
+    if #itemQueue == 0 then
+        statusLabel.Text = "❌ No target items found!"
+        canTeleport = true
+        return
+    end
+    
+    -- Sort queue by distance from player
+    local playerPosition = character.HumanoidRootPart.Position
+    table.sort(itemQueue, function(a, b)
+        local distA = (playerPosition - a.position).Magnitude
+        local distB = (playerPosition - b.position).Magnitude
+        return distA < distB
+    end)
+    
+    statusLabel.Text = "🚀 Starting auto-collect (" .. #itemQueue .. " items)..."
+    
+    -- Teleport to first item (you can extend this to teleport through the queue)
+    if itemQueue[1] then
+        teleportToPosition(itemQueue[1].position, itemQueue[1].name)
+    end
+    
+    -- Reset cooldown
+    task.spawn(function()
+        task.wait(COOLDOWN * 2) -- Longer cooldown for auto-collect
+        canTeleport = true
+    end)
+end
+
+-- iOS Style Button Creator
+local function createiOSButton(icon, color)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 36, 0, 36)
+    button.BackgroundColor3 = color
+    button.Text = icon
+    button.TextSize = 18
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.AutoButtonColor = false
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
+    
+    -- Button animation
+    button.MouseButton1Down:Connect(function()
+        button.Size = UDim2.new(0, 34, 0, 34)
+    end)
+    
+    button.MouseButton1Up:Connect(function()
+        button.Size = UDim2.new(0, 36, 0, 36)
+    end)
+    
+    return button
+end
+
+-- Forward declaration for updateItemDisplay
+local updateItemDisplay
+
+-- Function to discover new items in workspace
+local function discoverNewItems()
+    if not canDiscover then return end
+    canDiscover = false
+    
+    discoveredItems = {}
+    local newItemsFound = 0
+    
+    statusLabel.Text = "🔍 Discovering new items..."
+    
+    -- Scan workspace for any items not in our target list
+    for _, item in pairs(workspace:GetDescendants()) do
+        if item:IsA("BasePart") or item:IsA("Model") then
+            local itemName = item.Name
+            -- Skip if it's already in our target list or if it's a common non-item object
+            if not targetItems[itemName] and not discoveredItems[itemName] then
+                -- Filter out common game objects that aren't items
+                local skipNames = {
+                    "Baseplate", "SpawnLocation", "Camera", "Lighting", "Terrain",
+                    "StarterGui", "StarterPack", "StarterPlayer", "ReplicatedStorage",
+                    "ServerStorage", "Teams", "Workspace", "Players", "Part", "Block",
+                    "Wedge", "CornerWedge", "Cylinder", "Ball", "Seat", "VehicleSeat",
+                    "TrussPart", "WedgePart", "CornerWedgePart", "Model", "Folder",
+                    "Configuration", "IntValue", "StringValue", "BoolValue", "NumberValue"
+                }
+                
+                local shouldSkip = false
+                for _, skipName in pairs(skipNames) do
+                    if itemName == skipName or itemName:find("Part") or itemName:find("Block") then
+                        shouldSkip = true
+                        break
+                    end
+                end
+                
+                if not shouldSkip and itemName ~= "" and #itemName > 1 then
+                    discoveredItems[itemName] = (discoveredItems[itemName] or 0) + 1
+                    newItemsFound = newItemsFound + 1
+                end
+            end
+        end
+    end
+    
+    if newItemsFound > 0 then
+        statusLabel.Text = "🆕 Found " .. newItemsFound .. " new item types!"
+        -- Add discovered items to available items for display
+        for itemName, count in pairs(discoveredItems) do
+            if not targetItems[itemName] then -- Only add if truly new
+                targetItems[itemName] = {quantity = 1, category = "Miscellaneous"}
+            end
+            availableItems[itemName] = count
+        end
+        updateItemDisplay()
+    else
+        statusLabel.Text = "✅ No new items found."
+    end
+    
+    task.spawn(function()
+        task.wait(1)
+        canDiscover = true
+    end)
+end
+
+-- Function to create item entry in the list
+local function createItemEntry(itemName, found, target)
+    local entry = Instance.new("TextButton")
+    entry.Name = itemName .. "_Entry"
+    entry.Size = UDim2.new(1, -10, 0, 40)
+    entry.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    entry.BorderSizePixel = 0
+    entry.Text = ""
+    entry.AutoButtonColor = false
+    entry.Parent = scrollFrame
+    
+    local entryCorner = Instance.new("UICorner")
+    entryCorner.CornerRadius = UDim.new(0, 8)
+    entryCorner.Parent = entry
+    
+    local itemData = targetItems[itemName] or {quantity = 1, category = "Miscellaneous"}
+    local displayTarget = itemData.quantity
+    
+    -- Click to teleport to individual item
+    entry.MouseButton1Click:Connect(function()
+        if found > 0 then -- Only allow clicking if items are available
+            teleportToSpecificItem(itemName)
+        end
+    end)
+    
+    local itemLabel = Instance.new("TextLabel")
+    itemLabel.Parent = entry
+    itemLabel.Size = UDim2.new(0.6, 0, 0.7, 0)
+    itemLabel.Position = UDim2.new(0, 10, 0, 0)
+    itemLabel.BackgroundTransparency = 1
+    itemLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    itemLabel.Font = Enum.Font.SourceSans
+    itemLabel.Text = itemName
+    itemLabel.TextSize = 14
+    itemLabel.TextXAlignment = Enum.TextXAlignment.Left
+    itemLabel.ClipsDescendants = true
+    
+    local categoryLabel = Instance.new("TextLabel")
+    categoryLabel.Parent = entry
+    categoryLabel.Size = UDim2.new(0.6, 0, 0.3, 0)
+    categoryLabel.Position = UDim2.new(0, 10, 0.7, 0)
+    categoryLabel.BackgroundTransparency = 1
+    categoryLabel.TextColor3 = Color3.fromRGB(120, 120, 128)
+    categoryLabel.Font = Enum.Font.SourceSans
+    categoryLabel.Text = itemData.category or "Unknown"
+    categoryLabel.TextSize = 10
+    categoryLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local countLabel = Instance.new("TextLabel")
+    countLabel.Parent = entry
+    countLabel.Size = UDim2.new(0.25, -10, 0.5, 0)
+    countLabel.Position = UDim2.new(0.6, 0, 0, 0)
+    countLabel.BackgroundTransparency = 1
+    countLabel.Font = Enum.Font.SourceSansSemibold
+    countLabel.TextSize = 14
+    countLabel.TextXAlignment = Enum.TextXAlignment.Right
+    
+    local teleportIcon = Instance.new("TextLabel")
+    teleportIcon.Parent = entry
+    teleportIcon.Size = UDim2.new(0.15, 0, 0.5, 0)
+    teleportIcon.Position = UDim2.new(0.85, 0, 0.25, 0)
+    teleportIcon.BackgroundTransparency = 1
+    teleportIcon.Text = "🚀"
+    teleportIcon.TextSize = 16
+    teleportIcon.TextXAlignment = Enum.TextXAlignment.Center
+    
+    -- Color coding based on target vs found
+    if found == 0 then
+        countLabel.Text = "0/" .. (displayTarget == -1 and "∞" or displayTarget)
+        countLabel.TextColor3 = Color3.fromRGB(180, 180, 188)
+        itemLabel.TextColor3 = Color3.fromRGB(120, 120, 128)
+        entry.BackgroundColor3 = Color3.fromRGB(248, 248, 248)
+        teleportIcon.TextTransparency = 0.7
+    elseif displayTarget == -1 then
+        countLabel.Text = found .. " (∞)"
+        countLabel.TextColor3 = Color3.fromRGB(52, 199, 89)
+        teleportIcon.TextTransparency = 0
+    elseif found >= displayTarget then
+        countLabel.Text = found .. "/" .. displayTarget .. " ✓"
+        countLabel.TextColor3 = Color3.fromRGB(52, 199, 89)
+        teleportIcon.TextTransparency = 0
+    else
+        countLabel.Text = found .. "/" .. displayTarget
+        countLabel.TextColor3 = Color3.fromRGB(0, 122, 255)
+        teleportIcon.TextTransparency = 0
+    end
+    
+    -- Highlight effect
+    entry.MouseEnter:Connect(function()
+        if found > 0 then
+            entry.BackgroundColor3 = Color3.fromRGB(240, 240, 245)
+        end
+    end)
+    
+    entry.MouseLeave:Connect(function()
+        entry.BackgroundColor3 = found > 0 and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(248, 248, 248)
+    end)
+    
+    return entry
+end
+
+-- Function to update the item list display based on the current category
+updateItemDisplay = function()
+    -- Clear existing entries
+    for _, child in pairs(scrollFrame:GetChildren()) do
+        if child:IsA("TextButton") and child.Name:match("_Entry$") then
+            child:Destroy()
+        end
+    end
+    
+    -- Create new entries
+    for itemName, itemData in pairs(targetItems) do
+        if currentCategory == "All" or itemData.category == currentCategory then
+            local foundCount = availableItems[itemName] or 0
+            createItemEntry(itemName, foundCount, itemData.quantity)
+        end
+    end
+    
+    -- Update canvas size
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Function to scan workspace for items
+function scanWorkspaceItems()
+    if not canScan then return end
+    canScan = false
+    
+    availableItems = {}
+    itemPositions = {}
+    local totalItems = 0
+    
+    statusLabel.Text = "🔍 Scanning workspace..."
+    
+    -- Look in workspace and common item containers
+    local function scanContainer(container, containerName)
+        for _, item in pairs(container:GetDescendants()) do
+            if targetItems[item.Name] then
+                availableItems[item.Name] = (availableItems[item.Name] or 0) + 1
+                totalItems = totalItems + 1
+                
+                -- Store position for teleportation
+                local position = nil
+                if item:IsA("BasePart") then
+                    position = item.Position
+                elseif item:IsA("Model") then
+                    local primaryPart = item.PrimaryPart or item:FindFirstChildOfClass("BasePart")
+                    if primaryPart then
+                        position = primaryPart.Position
+                    end
+                end
+                
+                if position then
+                    if not itemPositions[item.Name] then
+                        itemPositions[item.Name] = {}
+                    end
+                    table.insert(itemPositions[item.Name], position)
+                end
+            end
+        end
+    end
+    
+    -- Scan main workspace
+    scanContainer(workspace, "Workspace")
+    
+    -- Scan common item container names
+    local itemContainers = workspace:FindFirstChild("Items") or workspace:FindFirstChild("ItemSpawns") or workspace:FindFirstChild("Collectibles")
+    if itemContainers then
+        scanContainer(itemContainers, "Items Container")
+    end
+    
+    statusLabel.Text = "📊 Found " .. totalItems .. " target items"
+    updateItemDisplay()
+    
+    task.spawn(function()
+        task.wait(1)
+        canScan = true
+    end)
+end
+
+-- Mode Switch functionality
+modeSwitch.MouseButton1Click:Connect(function()
+    AUTO_COLLECT_MODE = not AUTO_COLLECT_MODE
+    
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    if AUTO_COLLECT_MODE then
+        -- Switch ON
+        modeSwitch.BackgroundColor3 = Color3.fromRGB(52, 199, 89) -- Green
+        local tween = TweenService:Create(switchIndicator, tweenInfo, {
+            Position = UDim2.new(0, 27, 0, 2)
+        })
+        tween:Play()
+        statusLabel.Text = "✅ Auto-collect mode enabled"
+    else
+        -- Switch OFF
+        modeSwitch.BackgroundColor3 = Color3.fromRGB(200, 200, 205) -- Gray
+        local tween = TweenService:Create(switchIndicator, tweenInfo, {
+            Position = UDim2.new(0, 2, 0, 2)
+        })
+        tween:Play()
+        statusLabel.Text = "❌ Auto-collect mode disabled"
+    end
+    
+    task.spawn(function()
+        task.wait(2)
+        statusLabel.Text = "Ready to teleport"
+    end)
+end)
+
+-- Category Buttons
+local function createTabButton(name)
+    local button = Instance.new("TextButton")
+    button.Name = name .. "Tab"
+    button.Size = UDim2.new(1/#categories, 0, 1, 0)
+    button.BackgroundColor3 = name == "All" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(229, 229, 234)
+    button.TextColor3 = name == "All" and Color3.fromRGB(0, 122, 255) or Color3.fromRGB(120, 120, 128)
+    button.Font = Enum.Font.SourceSansSemibold
+    button.Text = name
+    button.TextSize = 12
+    button.AutoButtonColor = false
+    button.BorderSizePixel = 0
+    button.Parent = tabContainer
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(1, 0)
+    buttonCorner.Parent = button
+
+    button.MouseButton1Click:Connect(function()
+        for _, btn in pairs(tabContainer:GetChildren()) do
+            if btn:IsA("TextButton") then
+                btn.BackgroundColor3 = Color3.fromRGB(229, 229, 234)
+                btn.TextColor3 = Color3.fromRGB(120, 120, 128)
+            end
+        end
+        button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextColor3 = Color3.fromRGB(0, 122, 255) -- iOS blue
+        
+        currentCategory = name
+        updateItemDisplay()
+    end)
+    
+    return button
+end
+
+-- Create category tabs
+for _, cat in ipairs(categories) do
+    createTabButton(cat)
+end
+
+-- Action Buttons (Compact horizontal layout)
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Parent = mainFrame
+buttonContainer.Size = UDim2.new(1, -20, 0, 36)
+buttonContainer.Position = UDim2.new(0, 10, 0, 120)
+buttonContainer.BackgroundTransparency = 1
+
+local buttonLayout = Instance.new("UIListLayout")
+buttonLayout.Parent = buttonContainer
+buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+buttonLayout.Padding = UDim.new(0, 10)
+buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- Scan Button
+local scanButton = createiOSButton("🔍", Color3.fromRGB(0, 122, 255)) -- Blue
+scanButton.Parent = buttonContainer
+scanButton.MouseButton1Click:Connect(scanWorkspaceItems)
+
+-- Discover Button
+local discoverButton = createiOSButton("🆕", Color3.fromRGB(255, 149, 0)) -- Orange
+discoverButton.Parent = buttonContainer
+discoverButton.MouseButton1Click:Connect(discoverNewItems)
+
+-- Auto-Collect Button
+local autoButton = createiOSButton("🎯", Color3.fromRGB(52, 199, 89)) -- Green
+autoButton.Parent = buttonContainer
+autoButton.MouseButton1Click:Connect(autoCollectItems)
+
+-- Nearest Item Button
+local nearestButton = createiOSButton("📍", Color3.fromRGB(255, 59, 48)) -- Red
+nearestButton.Parent = buttonContainer
+
+-- Function to teleport to nearest item
+local function teleportToNearestItem()
+    if not canTeleport then 
+        statusLabel.Text = "⏳ Teleport on cooldown..."
+        return 
+    end
+    
+    canTeleport = false
+    
+    local character = Player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        statusLabel.Text = "❌ Character not found!"
+        canTeleport = true
+        return
+    end
+
+    local playerPosition = character.HumanoidRootPart.Position
+    local nearestItem = nil
+    local nearestDistance = math.huge
+    local nearestItemName = ""
+    
+    statusLabel.Text = "🔍 Finding nearest item..."
+    
+    -- Search through workspace for nearest target item
+    for _, item in pairs(workspace:GetDescendants()) do
+        if targetItems[item.Name] then
+            local position = nil
+            
+            if item:IsA("BasePart") then
+                position = item.Position
+            elseif item:IsA("Model") then
+                local primaryPart = item.PrimaryPart or item:FindFirstChildOfClass("BasePart")
+                if primaryPart then
+                    position = primaryPart.Position
+                end
+            end
+            
+            if position then
+                local distance = (playerPosition - position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestItem = position
+                    nearestItemName = item.Name
+                end
+            end
+        end
+    end
+    
+    if nearestItem then
+        statusLabel.Text = "🚀 Teleporting to nearest " .. nearestItemName .. " (" .. math.floor(nearestDistance) .. " studs away)"
+        teleportToPosition(nearestItem, nearestItemName)
+    else
+        statusLabel.Text = "❌ No target items found!"
+    end
+    
+    -- Reset cooldown
+    task.spawn(function()
+        task.wait(COOLDOWN)
+        canTeleport = true
+    end)
+end
+
+nearestButton.MouseButton1Click:Connect(teleportToNearestItem)
+
+-- Keybind support
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- T key for teleporting to nearest item
+    if input.KeyCode == Enum.KeyCode.T then
+        teleportToNearestItem()
+    -- R key for scanning
+    elseif input.KeyCode == Enum.KeyCode.R then
+        scanWorkspaceItems()
+    -- G key for auto-collect (if enabled)
+    elseif input.KeyCode == Enum.KeyCode.G and AUTO_COLLECT_MODE then
+        autoCollectItems()
+    end
+end)
+
+-- Add keybind info to status
+local keybindInfo = Instance.new("TextLabel")
+keybindInfo.Parent = mainFrame
+keybindInfo.Size = UDim2.new(1, -20, 0, 15)
+keybindInfo.Position = UDim2.new(0, 10, 1, -20)
+keybindInfo.BackgroundTransparency = 1
+keybindInfo.TextColor3 = Color3.fromRGB(120, 120, 128)
+keybindInfo.Font = Enum.Font.SourceSans
+keybindInfo.Text = "Keybinds: T=Nearest, R=Scan, G=Auto-collect"
+keybindInfo.TextSize = 10
+keybindInfo.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Initial scan after a brief delay to ensure everything is loaded
+task.spawn(function()
+    task.wait(1)
+    scanWorkspaceItems()
+end)
+
+-- Create a waypoint system for tracking teleported locations
+local waypointHistory = {}
+local maxWaypoints = 5
+
+local function addWaypoint(position, itemName)
+    table.insert(waypointHistory, 1, {
+        position = position,
+        name = itemName,
+        timestamp = tick()
+    })
+    
+    -- Keep only the last maxWaypoints
+    while #waypointHistory > maxWaypoints do
+        table.remove(waypointHistory)
+    end
+end
+
+-- Function to teleport back to previous location
+local function teleportToPreviousWaypoint()
+    if #waypointHistory > 1 then -- Skip current location
+        local waypoint = waypointHistory[2]
+        if waypoint then
+            teleportToPosition(waypoint.position, "Previous: " .. waypoint.name)
+        end
+    else
+        statusLabel.Text = "❌ No previous locations"
+    end
+end
+
+-- Add waypoint button
+local waypointButton = createiOSButton("↩️", Color3.fromRGB(142, 142, 147)) -- Gray
+waypointButton.Parent = buttonContainer
+waypointButton.MouseButton1Click:Connect(teleportToPreviousWaypoint)
+
+-- Override teleportToPosition to add waypoint tracking
+local originalTeleportToPosition = teleportToPosition
+teleportToPosition = function(position, itemName)
+    addWaypoint(position, itemName)
+    return originalTeleportToPosition(position, itemName)
+end
+
+print("✅ Teleporter loaded successfully!")
+print("📋 Targeting " .. tostring(#targetItems) .. " different item types")
+print("🔍 Use scan button to find items")
+print("🚀 Click items to teleport to them")
+print("🎯 Enable auto-collect mode for sequential teleporting")
+print("⌨️  Keybinds: T=Nearest, R=Scan, G=Auto-collect")
+print("📍 Waypoint system tracks your last 5 locations")
+    end,
+})
+
+ mainTab:CreateButton({
+    name = "bringstuff",
+    callback = function()
+        --[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+local workspaceItems = workspace:WaitForChild("Items")
+
+local selectedItem = nil
+
+local function startDrag(item)
+    pcall(function()
+        ReplicatedStorage.RemoteEvents.RequestStartDraggingItem:FireServer(item)
+    end)
+end
+
+local function stopDrag(item)
+    pcall(function()
+        ReplicatedStorage.RemoteEvents.StopDraggingItem:FireServer(item)
+    end)
+end
+
+local function bringItem(item)
+    if item.Name:find("Chest") then return end
+    if selectedItem and item.Name ~= selectedItem then return end
+    local targetPart
+    for _, child in ipairs(item:GetDescendants()) do
+        if child:IsA("MeshPart") or child:IsA("Part") then
+            targetPart = child
+            break
+        end
+    end
+    if targetPart then
+        local dropPos = hrp.Position + Vector3.new(0,2,0)
+        if item:IsA("Model") and item.PrimaryPart then
+            item:SetPrimaryPartCFrame(CFrame.new(dropPos))
+        else
+            targetPart.Position = dropPos
+        end
+    end
+end
+
+local function openChest(chest)
+    if chest and chest:FindFirstChild("Main") then
+        local proxAtt = chest.Main:FindFirstChild("ProximityAttachment")
+        if proxAtt then
+            for _, obj in ipairs(proxAtt:GetChildren()) do
+                if obj:IsA("ProximityPrompt") or obj.Name == "ProximityInteraction" then
+                    pcall(function() fireproximityprompt(obj) end)
+                end
+            end
+        end
+    end
+end
+
+workspaceItems.ChildAdded:Connect(function(item)
+    if item.Name:find("Chest") then
+        openChest(item)
+    end
+end)
+
+for _,item in ipairs(workspaceItems:GetChildren()) do
+    if item.Name:find("Chest") then
+        openChest(item)
+    end
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.Name = "LootChestUI"
+ScreenGui.ResetOnSpawn = false
+
+local Frame = Instance.new("Frame")
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 280, 0, 300)
+Frame.Position = UDim2.new(0.05,0,0.25,0)
+Frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+Frame.Active = true
+Frame.Draggable = true
+
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0,12)
+
+local UIStroke = Instance.new("UIStroke", Frame)
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(100,200,255)
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Frame
+Title.Size = UDim2.new(1,0,0,25)
+Title.BackgroundTransparency = 1
+Title.Text = "Auto Loot Chest"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextSize = 16
+
+local BringButton = Instance.new("TextButton")
+BringButton.Parent = Frame
+BringButton.Size = UDim2.new(0.9,0,0,30)
+BringButton.Position = UDim2.new(0.05,0,0.05,35)
+BringButton.BackgroundColor3 = Color3.fromRGB(50,50,50)
+BringButton.Text = "BRING ITEMS"
+BringButton.Font = Enum.Font.GothamBold
+BringButton.TextColor3 = Color3.fromRGB(255,255,255)
+BringButton.TextSize = 14
+
+local BringCorner = Instance.new("UICorner", BringButton)
+BringCorner.CornerRadius = UDim.new(0,8)
+
+local Dropdown = Instance.new("TextButton")
+Dropdown.Parent = Frame
+Dropdown.Size = UDim2.new(0.9,0,0,30)
+Dropdown.Position = UDim2.new(0.05,0,0.15,70)
+Dropdown.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Dropdown.Text = "ausgewählt (item = bring)"
+Dropdown.Font = Enum.Font.Gotham
+Dropdown.TextColor3 = Color3.fromRGB(255,255,255)
+Dropdown.TextSize = 12
+
+local DropCorner = Instance.new("UICorner", Dropdown)
+DropCorner.CornerRadius = UDim.new(0,6)
+
+local OptionsFrame = Instance.new("ScrollingFrame")
+OptionsFrame.Parent = Frame
+OptionsFrame.Size = UDim2.new(0.9,0,0.5,0)
+OptionsFrame.Position = UDim2.new(0.05,0,0.25,0)
+OptionsFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+OptionsFrame.Visible = false
+OptionsFrame.CanvasSize = UDim2.new(0,0,0,0)
+OptionsFrame.ScrollBarThickness = 6
+
+local OptCorner = Instance.new("UICorner", OptionsFrame)
+OptCorner.CornerRadius = UDim.new(0,6)
+
+local itemList = {
+    ["Alien Chest"]="Alien-Truhe",
+    ["Alpha Wolf Pelt"]="Alpha-Wolfsfell",
+    ["Anvil Front"]="Amboss (Vorderseite)",
+    ["Anvil Back"]="Amboss (Rückseite)",
+    ["Apple"]="Apfel",
+    ["Bandage"]="Verband",
+    ["Bear Corpse"]="Bärenkadaver",
+    ["Bear Pelt"]="Bärenfell",
+    ["Berry"]="Beere",
+    ["Biofuel"]="Biokraftstoff",
+    ["Bolt"]="Schraubenbolzen",
+    ["Broken Fan"]="Kaputter Ventilator",
+    ["Bunny Foot"]="Hasenpfote",
+    ["Carrot"]="Karotte",
+    ["Coal"]="Kohle",
+    ["Coin Stack"]="Münzstapel",
+    ["Cooked Morsel"]="Gebratenes Fleischstück",
+    ["Cooked Steak"]="Gebratenes Steak",
+    ["Chainsaw"]="Kettensäge",
+    ["Cultist"]="Kultist",
+    ["Cultist Gem"]="Kultisten-Edelstein",
+    ["Flower"]="Blume",
+    ["Fuel Canister"]="Kraftstoffkanister",
+    ["Hologram Emitter"]="Hologramm-Projektor",
+    ["Item Chest"]="Gegenstandstruhe",
+    ["Laser Fence Blueprint"]="Bauplan für Laserzaun",
+    ["Leather Body"]="Lederrüstung",
+    ["Iron Body"]="Eisenrüstung",
+    ["Thorn Body"]="Dornenrüstung",
+    ["Log"]="Holzscheit",
+    ["MedKit"]="Medizin-Kit",
+    ["Morsel"]="Fleischstück",
+    ["Old Flashlight"]="Alte Taschenlampe",
+    ["Old Radio"]="Altes Radio",
+    ["Good Sack"]="Guter Rucksack",
+    ["Good Axe"]="Gute Axt",
+    ["Raygun"]="Laserkanone",
+    ["Giant Sack"]="Riesiger Rucksack",
+    ["Strong Axe"]="Starke Axt",
+    ["Oil Barrel"]="Ölfass",
+    ["Old Car Engine"]="Alter Automotor",
+    ["Rifle"]="Gewehr",
+    ["Rifle Ammo"]="Gewehrmunition",
+    ["Revolver"]="Revolver",
+    ["Revolver Ammo"]="Revolvermunition",
+    ["Sapling"]="Setzling",
+    ["Sheet Metal"]="Metallplatte",
+    ["Steak"]="Steak",
+    ["Wolf Pelt"]="Wolfsfell",
+    ["Gem of the Forest Fragment"]="Wald-Edelsteinsplitter",
+    ["Tyre"]="Reifen",
+    ["Washing Machine"]="Waschmaschine",
+    ["Broken Microwave"]="Kaputte Mikrowelle"
+}
+
+local i=0
+for eng,vn in pairs(itemList) do
+    i=i+1
+    local btn = Instance.new("TextButton")
+    btn.Parent = OptionsFrame
+    btn.Size = UDim2.new(1,0,0,25)
+    btn.Position = UDim2.new(0,0,0,(i-1)*25)
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.Text = vn
+    btn.Font = Enum.Font.Gotham
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.TextSize = 12
+    btn.MouseButton1Click:Connect(function()
+        selectedItem = eng
+        Dropdown.Text = "ausgewählt: "..vn
+        OptionsFrame.Visible=false
+    end)
+end
+OptionsFrame.CanvasSize = UDim2.new(0,0,0,i*25)
+
+Dropdown.MouseButton1Click:Connect(function()
+    OptionsFrame.Visible = not OptionsFrame.Visible
+end)
+
+BringButton.MouseButton1Click:Connect(function()
+    local broughtItems = {}
+    for _,item in ipairs(workspaceItems:GetChildren()) do
+        bringItem(item)
+        table.insert(broughtItems, item)
+    end
+    for _, item in ipairs(broughtItems) do
+        startDrag(item)
+    end
+    task.wait(0.1)
+    for _, item in ipairs(broughtItems) do
+        stopDrag(item)
+    end
+end)
+    end,
+})
+
+mainTab:CreateButton({
+    name = "autofuel",
+    callback = function()
+        --[[ Script source: https://robscript.com/99-nights-in-the-forest-scripts/#auto-fuel ]]
+
+local utility = {
+    RequestStartDraggingItem = game:GetService("ReplicatedStorage").RemoteEvents.RequestStartDraggingItem,
+    StopDraggingItem = game:GetService("ReplicatedStorage").RemoteEvents.StopDraggingItem,
+    Items = workspace.Items,
+    MainFire = workspace.Map.Campground.MainFire,
+}
+
+utility.BringAllToFire = function(self)
+    local success, errormessage = pcall(function()
+        local fuels = self.Items:QueryDescendants("[$BurnFuel]")
+        for _, fuelsource in ipairs(fuels) do
+            self.RequestStartDraggingItem:FireServer(fuelsource)
+            fuelsource:MoveTo(self.MainFire:GetPivot().Position)
+            self.StopDraggingItem:FireServer(fuelsource)
+        end
+    end)
+    if success then
+        return "success"
+    end
+    return warn("error: "..tostring(errormessage))
+end
+
+while wait(1) do
+    utility:BringAllToFire()
+end
+    end,
+})
+
+mainTab:CreateButton({
+    name = "autochop",
+    callback = function()
+        --[[ Script source: https://robscript.com/99-nights-in-the-forest-scripts/#chop-aura ]]
+
+local utility = {
+    ToolDamageObject = game:GetService("ReplicatedStorage").RemoteEvents.ToolDamageObject,
+    EnemyHandler = require(game.Players.LocalPlayer.PlayerScripts.Client.EnemyHandler)
+}
+
+utility.HoldingAxe = function()
+    local success, result = pcall(function()
+        for _, model in ipairs(game.Players.LocalPlayer.Character:GetChildren()) do
+            if model:IsA("Model") then
+                if model:GetAttribute("ToolName") and model:GetAttribute("ToolName"):find("Axe") then
+                    return model:FindFirstChild("OriginalItem").Value
+                end
+            end
+        end
+    end)
+
+    if success then
+        return result
+    end
+
+    return nil
+end
+
+utility.CanChop = function(self, tree)
+    local success, result = pcall(function()
+        if tostring(tree):find("Big") then
+            for _, tool in pairs(game:GetService("Players").LocalPlayer.Inventory:GetChildren()) do
+                if tool:GetAttribute("ToolName") and tool:GetAttribute("ToolName"):find("Chainsaw") then
+                    return true
+                end
+            end
+        else
+            return true
+        end
+    end)
+
+    if success then
+        return result
+    end
+
+    return false
+end
+
+utility.GetClosestTree = function(self)
+    local success, result = pcall(function()
+        local closest = nil
+        local closestdistance = math.huge
+
+        local Trees = workspace:QueryDescendants('[$Resource]')
+
+        if Trees and typeof(Trees) == "table" and #Trees ~= 0 then
+            for _, tree in pairs(Trees) do
+                if tree:FindFirstChild("Trunk") and self:CanChop(tree) then
+                    local Trunk = tree:FindFirstChild("Trunk")
+                    local distance = game.Players.LocalPlayer:DistanceFromCharacter(Trunk.Position)
+
+                    if distance < closestdistance and distance < 100 then
+                        closestdistance = distance
+                        closest = tree
+                    end
+                end
+            end
+        end
+
+        return closest
+    end)
+
+    if success then
+        return result
+    end
+    return nil
+end
+
+utility.ChopClosetTree = function(self)
+    local _, result = pcall(function()
+        local closet = self:GetClosestTree()
+        if not closet then return "failed to get closet tree" end
+
+				local myroot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+				if not myroot then return "failed to get rootpart" end
+
+        local axe = self.HoldingAxe()
+        if not axe then return "failed to get axe" end
+
+        return {closet.Name, self.ToolDamageObject:InvokeServer(
+            closet,
+            axe,
+            self.EnemyHandler.GetHitRegId(),
+            myroot.CFrame,
+            true
+        )}
+    end)
+
+    return result
+end
+
+task.spawn(function()
+		while wait(0.1) do
+				local result = utility:ChopClosetTree()
+				if typeof(result) == "table" and #result == 2 and typeof(result[2]) == "table" then
+						warn("Chop successfully on tree: "..tostring(result[1]))
+				elseif typeof(result) == "string" then
+						warn("error: "..tostring(result))
+				end
+		end
+end)
+    end,
+})
+
+mainTab:CreateButton({
+    name = "inf jump",
+    callback = function()
+        game:GetService("UserInputService").JumpRequest:connect(function()
+        game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")       
+    end)
+    end,
+})
+
+mainTab:CreateButton({
+    name = "ESP",
+    callback = function()
+        --[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+loadstring(game:HttpGet("https://raw.githubusercontent.com/FeykHere/FeykhubS99D/main/FeykHubV1"))()
+    end,
+})
+
+mainTab:CreateButton({
+    name = "Fly mobile",
+    callback = function()
+        local main = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local up = Instance.new("TextButton")
+local down = Instance.new("TextButton")
+local onof = Instance.new("TextButton")
+local TextLabel = Instance.new("TextLabel")
+local plus = Instance.new("TextButton")
+local speed = Instance.new("TextLabel")
+local mine = Instance.new("TextButton")
+local closebutton = Instance.new("TextButton")
+local mini = Instance.new("TextButton")
+local mini2 = Instance.new("TextButton")
+
+main.Name = "main"
+main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+main.ResetOnSpawn = false
+
+Frame.Parent = main
+Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
+Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
+Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
+Frame.Size = UDim2.new(0, 190, 0, 57)
+
+up.Name = "up"
+up.Parent = Frame
+up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
+up.Size = UDim2.new(0, 44, 0, 28)
+up.Font = Enum.Font.SourceSans
+up.Text = "UP"
+up.TextColor3 = Color3.fromRGB(0, 0, 0)
+up.TextSize = 14.000
+
+down.Name = "down"
+down.Parent = Frame
+down.BackgroundColor3 = Color3.fromRGB(215, 255, 121)
+down.Position = UDim2.new(0, 0, 0.491228074, 0)
+down.Size = UDim2.new(0, 44, 0, 28)
+down.Font = Enum.Font.SourceSans
+down.Text = "DOWN"
+down.TextColor3 = Color3.fromRGB(0, 0, 0)
+down.TextSize = 14.000
+
+onof.Name = "onof"
+onof.Parent = Frame
+onof.BackgroundColor3 = Color3.fromRGB(255, 249, 74)
+onof.Position = UDim2.new(0.702823281, 0, 0.491228074, 0)
+onof.Size = UDim2.new(0, 56, 0, 28)
+onof.Font = Enum.Font.SourceSans
+onof.Text = "fly"
+onof.TextColor3 = Color3.fromRGB(0, 0, 0)
+onof.TextSize = 14.000
+
+TextLabel.Parent = Frame
+TextLabel.BackgroundColor3 = Color3.fromRGB(242, 60, 255)
+TextLabel.Position = UDim2.new(0.469327301, 0, 0, 0)
+TextLabel.Size = UDim2.new(0, 100, 0, 28)
+TextLabel.Font = Enum.Font.SourceSans
+TextLabel.Text = "FLY GUI V3"
+TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+TextLabel.TextScaled = true
+TextLabel.TextSize = 14.000
+TextLabel.TextWrapped = true
+
+plus.Name = "plus"
+plus.Parent = Frame
+plus.BackgroundColor3 = Color3.fromRGB(133, 145, 255)
+plus.Position = UDim2.new(0.231578946, 0, 0, 0)
+plus.Size = UDim2.new(0, 45, 0, 28)
+plus.Font = Enum.Font.SourceSans
+plus.Text = "+"
+plus.TextColor3 = Color3.fromRGB(0, 0, 0)
+plus.TextScaled = true
+plus.TextSize = 14.000
+plus.TextWrapped = true
+
+speed.Name = "speed"
+speed.Parent = Frame
+speed.BackgroundColor3 = Color3.fromRGB(255, 85, 0)
+speed.Position = UDim2.new(0.468421042, 0, 0.491228074, 0)
+speed.Size = UDim2.new(0, 44, 0, 28)
+speed.Font = Enum.Font.SourceSans
+speed.Text = "1"
+speed.TextColor3 = Color3.fromRGB(0, 0, 0)
+speed.TextScaled = true
+speed.TextSize = 14.000
+speed.TextWrapped = true
+
+mine.Name = "mine"
+mine.Parent = Frame
+mine.BackgroundColor3 = Color3.fromRGB(123, 255, 247)
+mine.Position = UDim2.new(0.231578946, 0, 0.491228074, 0)
+mine.Size = UDim2.new(0, 45, 0, 29)
+mine.Font = Enum.Font.SourceSans
+mine.Text = "-"
+mine.TextColor3 = Color3.fromRGB(0, 0, 0)
+mine.TextScaled = true
+mine.TextSize = 14.000
+mine.TextWrapped = true
+
+closebutton.Name = "Close"
+closebutton.Parent = main.Frame
+closebutton.BackgroundColor3 = Color3.fromRGB(225, 25, 0)
+closebutton.Font = "SourceSans"
+closebutton.Size = UDim2.new(0, 45, 0, 28)
+closebutton.Text = "X"
+closebutton.TextSize = 30
+closebutton.Position =  UDim2.new(0, 0, -1, 27)
+
+mini.Name = "minimize"
+mini.Parent = main.Frame
+mini.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
+mini.Font = "SourceSans"
+mini.Size = UDim2.new(0, 45, 0, 28)
+mini.Text = "-"
+mini.TextSize = 40
+mini.Position = UDim2.new(0, 44, -1, 27)
+
+mini2.Name = "minimize2"
+mini2.Parent = main.Frame
+mini2.BackgroundColor3 = Color3.fromRGB(192, 150, 230)
+mini2.Font = "SourceSans"
+mini2.Size = UDim2.new(0, 45, 0, 28)
+mini2.Text = "+"
+mini2.TextSize = 40
+mini2.Position = UDim2.new(0, 44, -1, 57)
+mini2.Visible = false
+
+speeds = 1
+
+local speaker = game:GetService("Players").LocalPlayer
+
+local chr = game.Players.LocalPlayer.Character
+local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+nowe = false
+
+game:GetService("StarterGui"):SetCore("SendNotification", { 
+	Title = "FLY GUI V3";
+	Text = "BY XNEO";
+	Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150"})
+Duration = 5;
+
+Frame.Active = true -- main = gui
+Frame.Draggable = true
+
+onof.MouseButton1Down:connect(function()
+
+	if nowe == true then
+		nowe = false
+
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,true)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,true)
+		speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+	else 
+		nowe = true
+
+
+
+		for i = 1, speeds do
+			spawn(function()
+
+				local hb = game:GetService("RunService").Heartbeat	
+
+
+				tpwalking = true
+				local chr = game.Players.LocalPlayer.Character
+				local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+				while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+					if hum.MoveDirection.Magnitude > 0 then
+						chr:TranslateBy(hum.MoveDirection)
+					end
+				end
+
+			end)
+		end
+		game.Players.LocalPlayer.Character.Animate.Disabled = true
+		local Char = game.Players.LocalPlayer.Character
+		local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
+
+		for i,v in next, Hum:GetPlayingAnimationTracks() do
+			v:AdjustSpeed(0)
+		end
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Landed,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Running,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics,false)
+		speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,false)
+		speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+	end
+
+
+
+
+	if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
+
+
+
+		local plr = game.Players.LocalPlayer
+		local torso = plr.Character.Torso
+		local flying = true
+		local deb = true
+		local ctrl = {f = 0, b = 0, l = 0, r = 0}
+		local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		local maxspeed = 50
+		local speed = 0
+
+
+		local bg = Instance.new("BodyGyro", torso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bg.cframe = torso.CFrame
+		local bv = Instance.new("BodyVelocity", torso)
+		bv.velocity = Vector3.new(0,0.1,0)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+		if nowe == true then
+			plr.Character.Humanoid.PlatformStand = true
+		end
+		while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+			game:GetService("RunService").RenderStepped:Wait()
+
+			if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+				speed = speed+.5+(speed/maxspeed)
+				if speed > maxspeed then
+					speed = maxspeed
+				end
+			elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+				speed = speed-1
+				if speed < 0 then
+					speed = 0
+				end
+			end
+			if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+				lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+			elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+			else
+				bv.velocity = Vector3.new(0,0,0)
+			end
+			--	game.Players.LocalPlayer.Character.Animate.Disabled = true
+			bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+		end
+		ctrl = {f = 0, b = 0, l = 0, r = 0}
+		lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		speed = 0
+		bg:Destroy()
+		bv:Destroy()
+		plr.Character.Humanoid.PlatformStand = false
+		game.Players.LocalPlayer.Character.Animate.Disabled = false
+		tpwalking = false
+
+
+
+
+	else
+		local plr = game.Players.LocalPlayer
+		local UpperTorso = plr.Character.UpperTorso
+		local flying = true
+		local deb = true
+		local ctrl = {f = 0, b = 0, l = 0, r = 0}
+		local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		local maxspeed = 50
+		local speed = 0
+
+
+		local bg = Instance.new("BodyGyro", UpperTorso)
+		bg.P = 9e4
+		bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+		bg.cframe = UpperTorso.CFrame
+		local bv = Instance.new("BodyVelocity", UpperTorso)
+		bv.velocity = Vector3.new(0,0.1,0)
+		bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+		if nowe == true then
+			plr.Character.Humanoid.PlatformStand = true
+		end
+		while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
+			wait()
+
+			if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+				speed = speed+.5+(speed/maxspeed)
+				if speed > maxspeed then
+					speed = maxspeed
+				end
+			elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
+				speed = speed-1
+				if speed < 0 then
+					speed = 0
+				end
+			end
+			if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+				lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+			elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
+				bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+			else
+				bv.velocity = Vector3.new(0,0,0)
+			end
+
+			bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+		end
+		ctrl = {f = 0, b = 0, l = 0, r = 0}
+		lastctrl = {f = 0, b = 0, l = 0, r = 0}
+		speed = 0
+		bg:Destroy()
+		bv:Destroy()
+		plr.Character.Humanoid.PlatformStand = false
+		game.Players.LocalPlayer.Character.Animate.Disabled = false
+		tpwalking = false
+
+
+
+	end
+
+
+
+
+
+end)
+
+local tis
+
+up.MouseButton1Down:connect(function()
+	tis = up.MouseEnter:connect(function()
+		while tis do
+			wait()
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,1,0)
+		end
+	end)
+end)
+
+up.MouseLeave:connect(function()
+	if tis then
+		tis:Disconnect()
+		tis = nil
+	end
+end)
+
+local dis
+
+down.MouseButton1Down:connect(function()
+	dis = down.MouseEnter:connect(function()
+		while dis do
+			wait()
+			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,-1,0)
+		end
+	end)
+end)
+
+down.MouseLeave:connect(function()
+	if dis then
+		dis:Disconnect()
+		dis = nil
+	end
+end)
+
+
+game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function(char)
+	wait(0.7)
+	game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
+	game.Players.LocalPlayer.Character.Animate.Disabled = false
+
+end)
+
+
+plus.MouseButton1Down:connect(function()
+	speeds = speeds + 1
+	speed.Text = speeds
+	if nowe == true then
+
+
+		tpwalking = false
+		for i = 1, speeds do
+			spawn(function()
+
+				local hb = game:GetService("RunService").Heartbeat	
+
+
+				tpwalking = true
+				local chr = game.Players.LocalPlayer.Character
+				local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+				while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+					if hum.MoveDirection.Magnitude > 0 then
+						chr:TranslateBy(hum.MoveDirection)
+					end
+				end
+
+			end)
+		end
+	end
+end)
+mine.MouseButton1Down:connect(function()
+	if speeds == 1 then
+		speed.Text = 'cannot be less than 1'
+		wait(1)
+		speed.Text = speeds
+	else
+		speeds = speeds - 1
+		speed.Text = speeds
+		if nowe == true then
+			tpwalking = false
+			for i = 1, speeds do
+				spawn(function()
+
+					local hb = game:GetService("RunService").Heartbeat	
+
+
+					tpwalking = true
+					local chr = game.Players.LocalPlayer.Character
+					local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+					while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+						if hum.MoveDirection.Magnitude > 0 then
+							chr:TranslateBy(hum.MoveDirection)
+						end
+					end
+
+				end)
+			end
+		end
+	end
+end)
+
+closebutton.MouseButton1Click:Connect(function()
+	main:Destroy()
+end)
+
+mini.MouseButton1Click:Connect(function()
+	up.Visible = false
+	down.Visible = false
+	onof.Visible = false
+	plus.Visible = false
+	speed.Visible = false
+	mine.Visible = false
+	mini.Visible = false
+	mini2.Visible = true
+	main.Frame.BackgroundTransparency = 1
+	closebutton.Position =  UDim2.new(0, 0, -1, 57)
+end)
+
+mini2.MouseButton1Click:Connect(function()
+	up.Visible = true
+	down.Visible = true
+	onof.Visible = true
+	plus.Visible = true
+	speed.Visible = true
+	mine.Visible = true
+	mini.Visible = true
+	mini2.Visible = false
+	main.Frame.BackgroundTransparency = 0 
+	closebutton.Position =  UDim2.new(0, 0, -1, 27)
+end)
+    end,
+})
+
+window:Notify({
+    title = "You Executed The Script",
+    content = "Very Good Script",
+    duration = 6.5
+})
+
